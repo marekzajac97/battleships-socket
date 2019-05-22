@@ -21,8 +21,8 @@
 #define HORIZONTAL 2
 
 
-int attack_ship(Map *m, int x, int y);
-int insert_ship(Map *m, int ship, int x, int y, int orientation);
+int attack_ship(Map *m, int, int);
+int insert_ship(Map *m, int, int , int, int);
 int check_used_ships(Map *m);
 
 #endif

@@ -67,6 +67,7 @@ typedef struct status_message
      */
     int x, y;
     int response;
+    int options;
 
 } status_message;
 
@@ -75,7 +76,7 @@ int send_hold_message(int sockfd);
 int send_start_message(int sockfd);
 int send_begin_message(int sockfd, int id);
 int send_attack_message(int sockfd, int id, int x, int y);
-int send_status_message(int sockfd, int id, int x, int y, int response);
+int send_status_message(int sockfd, int id, int x, int y, int response, int options);
 int send_insert_message(int sockfd, int id, int ship, int x, int y, int orientation);
 int receive_message(int sockfd, void** msg);
 #endif

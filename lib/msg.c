@@ -69,13 +69,14 @@ int send_attack_message(int sockfd, int id, int x, int y){
 		return 1;
 	}
 }
-int send_status_message(int sockfd, int id, int x, int y, int response){
+int send_status_message(int sockfd, int id, int x, int y, int response, int options){
 	status_message msg;
 	msg.type = STATUS_MSG_TYPE;
 	msg.id = id;
 	msg.x = x;
 	msg.y = y;
 	msg.response = response;
+	msg.options = options;
 	if(send(sockfd, &msg, sizeof(status_message), 0) < 0)
 		return -1;
 	else{

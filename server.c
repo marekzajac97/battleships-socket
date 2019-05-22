@@ -176,7 +176,7 @@ int get_clients_coords(int *cli_sockfd, Map* map_p0, Map* map_p1){
             ships_left_p0 = check_used_ships(map_p0);
             ships_left_p1 = check_used_ships(map_p1);
             #ifdef DEBUG
-            printf("[DEBUG] Ships left to assign: Player0=%d, Player0=%d\n", ships_left_p0, ships_left_p1);
+            printf("[DEBUG] Ships left to assign: Player0=%d, Player1=%d\n", ships_left_p0, ships_left_p1);
             #endif
 
             if(ships_left_p0 == 0){
@@ -253,7 +253,7 @@ void run_game(int *cli_sockfd /*void *thread_data*/)
     
     int game_over = 0;
     int player_turn = starting_id;
-    int msg_type;
+    int msg_type, code;
     void* message = NULL;
     while(!game_over) {
         #ifdef DEBUG
@@ -266,16 +266,16 @@ void run_game(int *cli_sockfd /*void *thread_data*/)
             printf("[DEBUG] recived ATTACK message\n");
             #endif
             Map *map = ((attack_message*)message)->id ? map_p0 : map_p1;
-            if ( attack_ship(map, ((attack_message*)message)->x, ((attack_message*)message)->y) ){
+            if ( ( code = attack_ship(map, ((attack_message*)message)->x, ((attack_message*)message)->y) ) ){
 
                 if (check_map(map) == 0)
                 {
                     #ifdef DEBUG
                     printf("[DEBUG] GAME OVER\n");
                     #endif
-                    if(send_status_message(cli_sockfd[0], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, GAMEOVER) < 0)
+                    if(send_status_message(cli_sockfd[0], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, GAMEOVER, 0) < 0)
                         error("ERROR sending STATUS to client");
-                    if(send_status_message(cli_sockfd[1], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, GAMEOVER) < 0)
+                    if(send_status_message(cli_sockfd[1], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, GAMEOVER, 0) < 0)
                         error("ERROR sending STATUS to client");
                     #ifdef DEBUG
                     printf("[DEBUG] sent STATUS message\n");
@@ -284,31 +284,45 @@ void run_game(int *cli_sockfd /*void *thread_data*/)
                 }
                 else
                 {
-                    #ifdef DEBUG
-                    printf("[DEBUG] HIT\n");
-                    #endif
-                    if(send_status_message(cli_sockfd[0], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, HIT) < 0)
-                        error("ERROR sending STATUS to client");
-                    if(send_status_message(cli_sockfd[1], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, HIT) < 0)
-                        error("ERROR sending STATUS to client");
-                    #ifdef DEBUG
-                    printf("[DEBUG] sent STATUS message\n");
-                    #endif
+                    if(code == 1){
+                        #ifdef DEBUG
+                        printf("[DEBUG] HIT\n");
+                        #endif
+                        if(send_status_message(cli_sockfd[0], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, HIT, 0) < 0)
+                            error("ERROR sending STATUS to client");
+                        if(send_status_message(cli_sockfd[1], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, HIT, 0) < 0)
+                            error("ERROR sending STATUS to client");
+                        #ifdef DEBUG
+                        printf("[DEBUG] sent STATUS message\n");
+                        #endif
+                    }else if(code == 2){
+                        #ifdef DEBUG
+                        printf("[DEBUG] SUNK\n");
+                        #endif
+                        int ship_type = getType(map, ((attack_message*)message)->x, ((attack_message*)message)->y );
+                        if(send_status_message(cli_sockfd[0], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, SUNK, ship_type) < 0)
+                            error("ERROR sending STATUS to client");
+                        if(send_status_message(cli_sockfd[1], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, SUNK, ship_type) < 0)
+                            error("ERROR sending STATUS to client");
+                        #ifdef DEBUG
+                        printf("[DEBUG] sent STATUS message\n");
+                        #endif
+                    }
                 }
             }else{
                 #ifdef DEBUG
                 printf("[DEBUG] MISS\n");
                 #endif
-                if(send_status_message(cli_sockfd[0], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, MISS) < 0)
+                if(send_status_message(cli_sockfd[0], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, MISS, 0) < 0)
                     error("ERROR sending STATUS to client");
-                if(send_status_message(cli_sockfd[1], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, MISS) < 0)
+                if(send_status_message(cli_sockfd[1], ((attack_message*)message)->id, ((attack_message*)message)->x, ((attack_message*)message)->y, MISS, 0) < 0)
                     error("ERROR sending STATUS to client");
                 #ifdef DEBUG
                 printf("[DEBUG] sent STATUS message\n");
                 #endif
                 player_turn = !player_turn; //change player turn
             }
-            show_maps(map_p0, map_p1);   
+            show_maps(map_p0, map_p1);  
         }
         else
             error("ERROR wrong message type, expected ATTACK message");

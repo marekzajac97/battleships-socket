@@ -1,7 +1,8 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <unistd.h>
 #include <string.h>
+#include <unistd.h>
+#include <time.h>
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
@@ -13,7 +14,8 @@
 #include "lib/util.h"
 #include "lib/config.h"
 
-//#define DEBUG
+#define DEBUG
+#define RANDOMIZE
 
 void error(const char *msg)
 {
@@ -147,6 +149,9 @@ int main(int argc, char *argv[])
     Map *opponent_map = init_map_matrix(MAP_WIDTH, MAP_HEIGH);
     int i, ship, x, y, orientation; // variables used for ship insertion;
 
+    #ifdef RANDOMIZE
+    srand(time(NULL));
+    #endif
     /*Insert ships*/
     while((i = check_used_ships(my_map)) > 0)
     {
@@ -155,40 +160,72 @@ int main(int argc, char *argv[])
 
         printf("You still have %i ship(s) to organize\n", i);
         printf("Choose one to put in the map: ");
+        #ifdef RANDOMIZE
+        ship = rand() % 4;
+        #else
         scanf("%i", &ship);
+        #endif
         while( (ship > 3 || ship < 0) || my_map->ships[ship] <= 0)
         {
             printf("Invalid choice\n");
             printf("Please, choose another one: ");
+            #ifdef RANDOMIZE
+            ship = rand() % 4;
+            #else
             scanf("%i", &ship);
+            #endif
         }
 
         printf("Orientation (1-vert/2-hori): ");
+        #ifdef RANDOMIZE
+        orientation = 1 + rand() % 2;
+        #else
         scanf("%i", &orientation);
+        #endif
         while(orientation != 1 && orientation != 2)
         {
             printf("Invalid choice\n");
             printf("Please, choose another option: ");
+            #ifdef RANDOMIZE
+            orientation = 1 + rand() % 2;
+            #else
             scanf("%i", &orientation);
+            #endif
         }
 
         printf("Ship head position\n");
         printf("x: ");
+        #ifdef RANDOMIZE
+        x = rand() % 10;
+        #else
         scanf("%i", &x);
+        #endif
         while(x > my_map->width || x < 0)
         {
             printf("Invalid choice\n");
             printf("Please, choose another x: ");
+            #ifdef RANDOMIZE
+            x = rand() % 10;
+            #else
             scanf("%i", &x);
+            #endif
         }
 
         printf("y: ");
+        #ifdef RANDOMIZE
+        y = rand() % 10;
+        #else
         scanf("%i", &y);
+        #endif
         while(y > my_map->height || y < 0)
         {
             printf("Invalid choice\n");
             printf("Please, choose another y: ");
+            #ifdef RANDOMIZE
+            y = rand() % 10;
+            #else
             scanf("%i", &y);
+            #endif
         }
 
 
@@ -209,6 +246,7 @@ int main(int argc, char *argv[])
     printf("\nShips ready!\n");
 
     show_maps(my_map, opponent_map);
+    show_ships_left(opponent_map);
 
     do {
         if( (msg_type = receive_message(sockfd, &message) ) < 0 ){
@@ -231,7 +269,9 @@ int main(int argc, char *argv[])
         attack(sockfd, id);
     else
         printf("Oponent's move. Waiting...\n");
-        
+    
+    int ship_type;
+
     while(1) {
         if( (msg_type = receive_message(sockfd, &message) ) < 0 ){
             error("ERROR receiving message form server");
@@ -246,18 +286,33 @@ int main(int argc, char *argv[])
                     switch (((status_message*)message)->response)
                     {
                         case MISS:
-                            opponent_map->map[((status_message*)message)->y][((status_message*)message)->x] = MISSED;
+                            opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = MISSED;
                             show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
                             printf("Oponent's move. Waiting...\n");
                             break;
                         case HIT:
-                            opponent_map->map[((status_message*)message)->y][((status_message*)message)->x] = DESTROYED;
+                            opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
                             show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
                             printf("You hit.\n");
                             attack(sockfd, id);
                             break;
-                        case GAMEOVER:
+                        case SUNK:
+                            opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            ship_type = ((status_message*)message)->options;
+                            opponent_map->ships[ship_type]--;
                             show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
+                            printf("Hit and sunk!\n");
+                            attack(sockfd, id);
+                            break;
+                        case GAMEOVER:
+                            opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            ship_type = ((status_message*)message)->options;
+                            opponent_map->ships[ship_type]--;
+                            show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
                             PRINT_BLUE("\nYOU WON!!!\n\n");
                             close(sockfd);
                             return 0;
@@ -269,18 +324,29 @@ int main(int argc, char *argv[])
                     switch (((status_message*)message)->response)
                     {
                         case MISS:
-                            my_map->map[((status_message*)message)->y][((status_message*)message)->x] = MISSED;
+                            my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = MISSED;
                             show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
                             printf("Oponent missed.\n");
                             attack(sockfd, id);
                             break;
                         case HIT:
-                            my_map->map[((status_message*)message)->y][((status_message*)message)->x] = DESTROYED;
+                            my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
                             show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
                             printf("Oponent hit. Waiting for his next move...\n");
                             break;
-                        case GAMEOVER:
+                        case SUNK:
+                            my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            // more code...
                             show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
+                            printf("Oponent has hit and sunk your ship!\n");
+                            break;
+                        case GAMEOVER:
+                            my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            show_maps(my_map, opponent_map);
+                            show_ships_left(opponent_map);
                             PRINT_RED("\nYOU LOST!!!\n\n");
                             close(sockfd);
                             return 0;

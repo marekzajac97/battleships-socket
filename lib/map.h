@@ -18,20 +18,23 @@ typedef struct map
 {
     int width;
     int height;
-    int **map;
+    int ***map;
 
     // ships[0] -> aircraft carrier
     // ships[1] -> battleship
     // ships[2] -> submarine
     // ships[3] -> patrol boat
     int ships[4];
-    int total;
+    int **ships_staus;
 } Map;
 
 
 // Map funcionts
 int check_map(Map *);
+int getType(Map *, int, int);
+int getIndex(Map *, int, int);
 void show_ships(Map *);
+void show_ships_left(Map *);
 void show_map(Map *);
 void show_maps(Map *, Map *);
 Map *init_map_matrix(int, int);
