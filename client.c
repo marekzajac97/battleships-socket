@@ -92,6 +92,10 @@ int attack(int sockfd, int id){
 
 int main(int argc, char *argv[])
 {
+    #ifdef RANDOMIZE
+    srand(time(NULL));
+    #endif
+
     /* Make sure host and port are specified. */
     if (argc < 3) {
        fprintf(stderr,"usage %s hostname port\n", argv[0]);
@@ -149,9 +153,6 @@ int main(int argc, char *argv[])
     Map *opponent_map = init_map_matrix(MAP_WIDTH, MAP_HEIGH);
     int i, ship, x, y, orientation; // variables used for ship insertion;
 
-    #ifdef RANDOMIZE
-    srand(time(NULL));
-    #endif
     /*Insert ships*/
     while((i = check_used_ships(my_map)) > 0)
     {
