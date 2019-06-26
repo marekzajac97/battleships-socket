@@ -12,6 +12,7 @@
 #include "lib/ship.h"
 #include "lib/util.h"
 #include "lib/config.h"
+#include "lib/multicast.h"
 
 #define DEBUG
 
@@ -33,6 +34,10 @@ int setup_listener(int portno)
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     if (sockfd < 0) 
         error("ERROR opening listener socket.");
+
+    int enable = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        error("ERROR setsockopt() error");
     
     /* Zero out the memory for the server information */
     memset(&serv_addr, 0, sizeof(serv_addr));
@@ -45,6 +50,9 @@ int setup_listener(int portno)
     /* Bind the server info to the listener socket. */
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
         error("ERROR binding listener socket.");
+
+    /* Listen for clients. */
+    listen(sockfd, /*253 - player_count*/ 2);
 
     #ifdef DEBUG
     printf("[DEBUG] Listener set.\n");    
@@ -70,9 +78,6 @@ void get_clients(int lis_sockfd, int * cli_sockfd)
     int num_conn = 0;
     while(num_conn < 2)
     {
-        /* Listen for clients. */
-	    listen(lis_sockfd, /*253 - player_count*/ 2);
-        
         /* Zero out memory for the client information. */
         memset(&cli_addr, 0, sizeof(cli_addr));
 
@@ -340,18 +345,70 @@ void run_game(int *cli_sockfd /*void *thread_data*/)
 /* 
  * Main Program
  */
+void service_discovery()
+{
+    int sendfd, recvfd;
+    const int on = 1;
+    socklen_t salen;
+    struct sockaddr *sasend, *sarecv;
+    struct sockaddr_in6 *ipv6addr;
+    struct sockaddr_in *ipv4addr;
+    char   *addr_str;
+
+    sendfd = snd_udp_socket(SERVICE_MULTICAST_ADDR, SERVICE_PORT, &sasend, &salen);
+
+    if ( (recvfd = socket(sasend->sa_family, SOCK_DGRAM, 0)) < 0){
+        error("ERROR: socket error");
+    }
+
+    if (setsockopt(recvfd, SOL_SOCKET, SO_REUSEADDR, &on, sizeof(on)) < 0){
+        error("ERROR: setsockopt error");
+    }
+
+    sarecv = malloc(salen);
+    memcpy(sarecv, sasend, salen);
+    
+    if(sarecv->sa_family == AF_INET6){
+      ipv6addr = (struct sockaddr_in6 *) sarecv;
+      ipv6addr->sin6_addr =  in6addr_any;
+    }
+
+    if(sarecv->sa_family == AF_INET){
+      ipv4addr = (struct sockaddr_in *) sarecv;
+      ipv4addr->sin_addr.s_addr =  htonl(INADDR_ANY);
+    }
+    
+    if( bind(recvfd, sarecv, salen) < 0 ){
+        error("ERROR: bind error");
+    }
+    
+    if( mcast_join(recvfd, sasend, salen, NULL, 0) < 0 ){
+        error("ERROR: mcast_join() error");
+    }
+      
+    mcast_set_loop(sendfd, 1);
+
+    while(1)
+        recv_multicast(recvfd, salen);
+}
 
 int main(int argc, char *argv[])
 {   
     /* Make sure a port was specified. */
-    if (argc < 2) {
+    /*if (argc < 2) {
         fprintf(stderr,"ERROR, no port provided\n");
         exit(1);
+    }*/
+    /* Multicast part*/
+    if ( fork() == 0) {
+        service_discovery();
     }
     
-    int lis_sockfd = setup_listener(atoi(argv[1])); /* Listener socket. */
+    /* Unicast part */
+    //int lis_sockfd = setup_listener(atoi(argv[1])); /* Listener socket. */
+    int lis_sockfd = setup_listener(SERVICE_PORT);
 
-    while (1) { 
+    while (1) {
         if( (num_of_games++) < 10) { /* maximum number of hosted games */
             int *cli_sockfd = (int*)malloc(2*sizeof(int)); /* Client sockets */
             memset(cli_sockfd, 0, 2*sizeof(int));

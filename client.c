@@ -16,7 +16,7 @@
 #include "lib/config.h"
 #include "lib/multicast.h"
 
-//#define DEBUG
+#define DEBUG
 #define RANDOMIZE
 #define CLEAR
 
@@ -29,6 +29,40 @@ void error(const char *msg)
     #endif 
 
     exit(0);
+}
+
+int setup_udp_listener(int portno)
+{
+    int sockfd;
+    struct sockaddr_in serv_addr;
+
+    /* Get a socket to listen on */
+    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sockfd < 0) 
+        error("ERROR opening listener socket.");
+
+    int enable = 1;
+    if (setsockopt(sockfd, SOL_SOCKET, SO_REUSEADDR, &enable, sizeof(int)) < 0)
+        error("ERROR setsockopt() error");
+    
+    /* Zero out the memory for the server information */
+    memset(&serv_addr, 0, sizeof(serv_addr));
+    
+    /* set up the server info */
+    serv_addr.sin_family = AF_INET; 
+    serv_addr.sin_addr.s_addr = INADDR_ANY; 
+    serv_addr.sin_port = htons(portno);     
+
+    /* Bind the server info to the listener socket. */
+    if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
+        error("ERROR binding listener socket.");
+
+    #ifdef DEBUG
+    printf("[DEBUG] UDP Listener set.\n");    
+    #endif 
+
+    /* Return the socket number. */
+    return sockfd;
 }
 
 /* Sets up the connection to the server. */
@@ -97,13 +131,61 @@ int main(int argc, char *argv[])
     #endif
 
     /* Make sure host and port are specified. */
-    if (argc < 3) {
+    /*if (argc < 3) {
        fprintf(stderr,"usage %s hostname port\n", argv[0]);
        exit(0);
+    }*/
+    /* ------------------------------------------- Service discovery-------------------------------*/
+
+    int sendfd, recvfd, n;
+    socklen_t salen, len;
+    struct sockaddr *sasend, *safrom;
+    struct sockaddr_in6 *cliaddr;
+    struct sockaddr_in *cliaddrv4;
+    char   addr_str[INET6_ADDRSTRLEN+1];
+
+    safrom = malloc(salen);
+
+    // setting up socket for reciving reply form the server (after sending request on multicast)
+    recvfd = setup_udp_listener(2222);
+
+    /* setting up socket for sending request to the server (on multicast)*/
+    sendfd = snd_udp_socket(SERVICE_MULTICAST_ADDR, SERVICE_PORT, &sasend, &salen);
+    //mcast_set_loop(sendfd, 1);
+
+    /* sending request on multicast */
+    send_multicast(sendfd, sasend, salen);
+
+    #ifdef DEBUG
+    printf("[DEBUG] sending multicast request\n");
+    #endif
+
+    /* reciving replay on unicast */
+    len = sizeof(safrom);
+    if( (n = recvfrom(recvfd, NULL, 0, 0, safrom, &len)) < 0 )
+          perror("recvfrom() error");
+        
+    if( safrom->sa_family == AF_INET6 ){
+          cliaddr = (struct sockaddr_in6*) safrom;
+          inet_ntop(AF_INET6, (struct sockaddr  *) &cliaddr->sin6_addr,  addr_str, sizeof(addr_str));
+    }
+    else{
+          cliaddrv4 = (struct sockaddr_in*) safrom;
+          inet_ntop(AF_INET, (struct sockaddr  *) &cliaddrv4->sin_addr,  addr_str, sizeof(addr_str));
     }
 
+    #ifdef DEBUG
+    printf("[DEBUG] Recived reply from: %s\n", addr_str);
+    #endif
+
+    close(recvfd);
+    close(sendfd);
+
+    /*-------------------------------------------------------------------------------------------*/
+
     /* Connect to the server. */
-    int sockfd = connect_to_server(argv[1], atoi(argv[2]));
+    //int sockfd = connect_to_server(argv[1], atoi(argv[2]));
+    int sockfd = connect_to_server(addr_str, SERVICE_PORT);
     printf("Connected.\n");
 
     /* The client ID is the first thing we receive after connecting. */    
