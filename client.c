@@ -14,8 +14,9 @@
 #include "lib/util.h"
 #include "lib/config.h"
 
-#define DEBUG
+//#define DEBUG
 #define RANDOMIZE
+#define CLEAR
 
 void error(const char *msg)
 {
@@ -149,6 +150,10 @@ int main(int argc, char *argv[])
     printf("Game on!\n");
     sleep(1);
 
+    #ifdef CLEAR
+    system("clear");
+    #endif
+
     Map *my_map = init_map_matrix(MAP_WIDTH, MAP_HEIGH);
     Map *opponent_map = init_map_matrix(MAP_WIDTH, MAP_HEIGH);
     int i, ship, x, y, orientation; // variables used for ship insertion;
@@ -168,6 +173,12 @@ int main(int argc, char *argv[])
         #endif
         while( (ship > 3 || ship < 0) || my_map->ships[ship] <= 0)
         {
+            #ifdef CLEAR
+            system("clear");
+            show_map(my_map);
+            show_ships(my_map);
+            printf("You still have %i ship(s) to organize\n", i);
+            #endif
             printf("Invalid choice\n");
             printf("Please, choose another one: ");
             #ifdef RANDOMIZE
@@ -184,7 +195,13 @@ int main(int argc, char *argv[])
         scanf("%i", &orientation);
         #endif
         while(orientation != 1 && orientation != 2)
-        {
+        {   
+            #ifdef CLEAR
+            system("clear");
+            show_map(my_map);
+            show_ships(my_map);
+            printf("Orientation (1-vert/2-hori): ");
+            #endif
             printf("Invalid choice\n");
             printf("Please, choose another option: ");
             #ifdef RANDOMIZE
@@ -203,6 +220,13 @@ int main(int argc, char *argv[])
         #endif
         while(x > my_map->width || x < 0)
         {
+            #ifdef CLEAR
+            system("clear");
+            show_map(my_map);
+            show_ships(my_map);
+            printf("Ship head position\n");
+            printf("x: ");
+            #endif
             printf("Invalid choice\n");
             printf("Please, choose another x: ");
             #ifdef RANDOMIZE
@@ -220,6 +244,13 @@ int main(int argc, char *argv[])
         #endif
         while(y > my_map->height || y < 0)
         {
+            #ifdef CLEAR
+            system("clear");
+            show_map(my_map);
+            show_ships(my_map);
+            printf("Ship head position\n");
+            printf("y: ");
+            #endif
             printf("Invalid choice\n");
             printf("Please, choose another y: ");
             #ifdef RANDOMIZE
@@ -241,8 +272,9 @@ int main(int argc, char *argv[])
                 #endif
             }
     }
-
-    //system("clear");
+    #ifdef CLEAR
+    system("clear");
+    #endif
 
     printf("\nShips ready!\n");
 
@@ -263,6 +295,12 @@ int main(int argc, char *argv[])
     } while ( msg_type != BEGIN_MSG_TYPE );
     #ifdef DEBUG
         printf("[DEBUG] recived BEGIN message\n");
+    #endif
+
+    #ifdef CLEAR
+    system("clear");
+    show_maps(my_map, opponent_map);
+    show_ships_left(opponent_map);
     #endif
 
     /*First move*/
@@ -288,12 +326,18 @@ int main(int argc, char *argv[])
                     {
                         case MISS:
                             opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = MISSED;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
-                            printf("Oponent's move. Waiting...\n");
+                            printf("Missed. Oponent's move...\n");
                             break;
                         case HIT:
                             opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
                             printf("You hit.\n");
@@ -303,6 +347,9 @@ int main(int argc, char *argv[])
                             opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
                             ship_type = ((status_message*)message)->options;
                             opponent_map->ships[ship_type]--;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
                             printf("Hit and sunk!\n");
@@ -312,6 +359,9 @@ int main(int argc, char *argv[])
                             opponent_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
                             ship_type = ((status_message*)message)->options;
                             opponent_map->ships[ship_type]--;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
                             PRINT_BLUE("\nYOU WON!!!\n\n");
@@ -326,6 +376,9 @@ int main(int argc, char *argv[])
                     {
                         case MISS:
                             my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = MISSED;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
                             printf("Oponent missed.\n");
@@ -333,12 +386,18 @@ int main(int argc, char *argv[])
                             break;
                         case HIT:
                             my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
                             printf("Oponent hit. Waiting for his next move...\n");
                             break;
                         case SUNK:
                             my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             // more code...
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
@@ -346,6 +405,9 @@ int main(int argc, char *argv[])
                             break;
                         case GAMEOVER:
                             my_map->map[((status_message*)message)->y][((status_message*)message)->x][0] = DESTROYED;
+                            #ifdef CLEAR
+                            system("clear");
+                            #endif
                             show_maps(my_map, opponent_map);
                             show_ships_left(opponent_map);
                             PRINT_RED("\nYOU LOST!!!\n\n");
@@ -357,7 +419,7 @@ int main(int argc, char *argv[])
                 }
             }else
                 error("ERROR wrong message type, expected ATTACK message");
-    } 
+    }
     printf("Game over.\n");
 
     /* Close server socket and exit. */

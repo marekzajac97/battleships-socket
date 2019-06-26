@@ -150,7 +150,7 @@ int insert_ship(Map *m, int ship_type, int x, int y, int orientation)
             if(y-1 >= 0)
                 if (m->map[y-1][i][0] != 0) 
                     return -1;
-            if(i==y+size-1){
+            if(i==x+size-1){
                 printf("[DEBUG] checking at x:%d y:%d\n", i+1, y);
                 if(i+1 < m->width)
                     if (m->map[y][i+1][0] != 0) 
