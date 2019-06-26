@@ -6,6 +6,7 @@
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <arpa/inet.h>
 #include <netdb.h>
 
 #include "lib/msg.h"
@@ -13,6 +14,7 @@
 #include "lib/ship.h"
 #include "lib/util.h"
 #include "lib/config.h"
+#include "lib/multicast.h"
 
 //#define DEBUG
 #define RANDOMIZE
@@ -33,7 +35,7 @@ void error(const char *msg)
 int connect_to_server(char * hostname, int portno)
 {
     struct sockaddr_in serv_addr;
-    struct hostent *server;
+    int err;
  
     /* Get a socket. */
     int sockfd = socket(AF_INET, SOCK_STREAM, 0);
@@ -41,21 +43,18 @@ int connect_to_server(char * hostname, int portno)
     if (sockfd < 0) 
         error("ERROR opening socket for server.");
 	
-    /* Get the address of the server. */
-    server = gethostbyname(hostname);
-	
-    if (server == NULL) {
-        fprintf(stderr,"ERROR, no such host\n");
-        exit(0);
-    }
-	
 	/* Zero out memory for server info. */
 	memset(&serv_addr, 0, sizeof(serv_addr));
 
 	/* Set up the server info. */
     serv_addr.sin_family = AF_INET;
-    memmove(server->h_addr, &serv_addr.sin_addr.s_addr, server->h_length);
-    serv_addr.sin_port = htons(portno); 
+    serv_addr.sin_port = htons(portno);
+
+    if ( (err=inet_pton(AF_INET, hostname, &serv_addr.sin_addr)) == -1){
+        error("ERROR: inet_pton error");
+    }else if(err == 0){
+        error("ERROR: Invalid address family");
+    }
 
 	/* Make the connection. */
     if (connect(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0) 
