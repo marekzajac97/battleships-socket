@@ -16,7 +16,7 @@
 #include "lib/config.h"
 #include "lib/multicast.h"
 
-#define DEBUG
+//#define DEBUG
 #define RANDOMIZE
 #define CLEAR
 
@@ -107,17 +107,15 @@ int attack(int sockfd, int id){
     printf("Your turn to attack\n");
     printf("x: ");
     scanf("%i", &x);
-    while(x >= MAP_WIDTH || x < 0){
-        printf("Invalid choice.\n");
-        printf("x: ");
+    while(x > MAP_WIDTH || x < 0){
+        printf("Invalid choice.");
         scanf("%i", &x);
     }
     printf("y: ");
     scanf("%i", &y);
-    while(y >= MAP_HEIGH || y < 0){
-        printf("Invalid choice.\n");
-        printf("y: ");
-        scanf("%i", &y);
+    while(y > MAP_HEIGH || y < 0){
+        printf("Invalid choice.");
+        scanf("%i", &x);
     }
     if(send_attack_message(sockfd, id, x, y) < 0)
         error("ERROR sending ATTACK message");
