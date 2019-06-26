@@ -107,15 +107,17 @@ int attack(int sockfd, int id){
     printf("Your turn to attack\n");
     printf("x: ");
     scanf("%i", &x);
-    while(x > MAP_WIDTH || x < 0){
-        printf("Invalid choice.");
+    while(x >= MAP_WIDTH || x < 0){
+        printf("Invalid choice.\n");
+        printf("x: ");
         scanf("%i", &x);
     }
     printf("y: ");
     scanf("%i", &y);
-    while(y > MAP_HEIGH || y < 0){
-        printf("Invalid choice.");
-        scanf("%i", &x);
+    while(y >= MAP_HEIGH || y < 0){
+        printf("Invalid choice.\n");
+        printf("y: ");
+        scanf("%i", &y);
     }
     if(send_attack_message(sockfd, id, x, y) < 0)
         error("ERROR sending ATTACK message");
