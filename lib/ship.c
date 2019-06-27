@@ -13,9 +13,9 @@ int attack_ship(Map *m, int x, int y)
     if (m->map[y][x][0] == SHIP || m->map[y][x][0] == DESTROYED)
     {
         m->map[y][x][0] = DESTROYED;
-        printf("[DEBUG] ship type: %d\n", m->map[y][x][1]);
-        printf("[DEBUG] ship index: %d\n", m->map[y][x][2]);
-        printf("[DEBUG] status before %d\n", ( m->ships_staus[ m->map[y][x][1] ][ m->map[y][x][2] ]));
+        //printf("[DEBUG] ship type: %d\n", m->map[y][x][1]);
+        //printf("[DEBUG] ship index: %d\n", m->map[y][x][2]);
+        //printf("[DEBUG] status before %d\n", ( m->ships_staus[ m->map[y][x][1] ][ m->map[y][x][2] ]));
         if( --( m->ships_staus[ m->map[y][x][1] ][ m->map[y][x][2] ]) == 0)
             return 2;
         else
@@ -151,7 +151,7 @@ int insert_ship(Map *m, int ship_type, int x, int y, int orientation)
                 if (m->map[y-1][i][0] != 0) 
                     return -1;
             if(i==x+size-1){
-                printf("[DEBUG] checking at x:%d y:%d\n", i+1, y);
+                //printf("[DEBUG] checking at x:%d y:%d\n", i+1, y);
                 if(i+1 < m->width)
                     if (m->map[y][i+1][0] != 0) 
                         return -1;

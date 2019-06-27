@@ -13,6 +13,7 @@
 #include	<netdb.h>
 #include	<sys/utsname.h>
 #include	<linux/un.h>
+#include <syslog.h>
 
 #include "multicast.h"
 
@@ -245,7 +246,7 @@ void recv_multicast(int recvfd, socklen_t salen)
 
 	safrom = malloc(salen);
 
-	printf("[DEBUG] [SERVICE DISCOVERY] Waiting for requests...\n");
+	syslog (LOG_INFO,"[SERVICE DISCOVERY] Waiting for requests...");
 
 	len = salen;
 	if( (n = recvfrom(recvfd, NULL, 0, 0, safrom, &len)) < 0 ){
@@ -262,7 +263,7 @@ void recv_multicast(int recvfd, socklen_t salen)
 	      inet_ntop(AF_INET, (struct sockaddr  *) &cliaddrv4->sin_addr,  addr_str, sizeof(addr_str));
 	}
 
-	printf("[DEBUG] [SERVICE DISCOVERY] Recived request from %s\n", addr_str);
+	syslog (LOG_INFO,"[SERVICE DISCOVERY] Recived request from %s", addr_str);
 
 	// Send reply to client
 
@@ -288,7 +289,7 @@ void recv_multicast(int recvfd, socklen_t salen)
 		exit(1);
 	}
 
-	printf("[DEBUG] [SERVICE DISCOVERY] Reply sent\n");
+	syslog (LOG_INFO,"[SERVICE DISCOVERY] Reply sent");
 	/*printf("Datagram from %s\n", addr_str);
 	fflush(stdout);*/
 }

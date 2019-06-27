@@ -17,7 +17,7 @@
 #include "lib/multicast.h"
 
 //#define DEBUG
-#define RANDOMIZE
+//#define RANDOMIZE
 #define CLEAR
 
 void error(const char *msg)
@@ -242,6 +242,9 @@ int main(int argc, char *argv[])
     /*Insert ships*/
     while((i = check_used_ships(my_map)) > 0)
     {
+        #ifdef CLEAR
+        system("clear");
+        #endif
         show_map(my_map);
         show_ships(my_map);
 

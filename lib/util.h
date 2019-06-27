@@ -8,7 +8,4 @@
 #define PRINT_MAGENTA(string)   printf("\x1b[35m%s\x1b[0m", string);
 #define PRINT_CYAN(string)      printf("\x1b[36m%s\x1b[0m", string);
 
-
-void welcome();
-
 #endif

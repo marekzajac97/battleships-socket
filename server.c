@@ -19,8 +19,6 @@
 #include "lib/config.h"
 #include "lib/multicast.h"
 
-#define DEBUG
-
 int num_of_games = 0;
 
 void sig_chld(int signo)
@@ -29,7 +27,7 @@ void sig_chld(int signo)
     int     stat;
 
     while ( (pid = waitpid(-1, &stat, WNOHANG)) > 0)
-        printf("child %d terminated\n", pid);
+        syslog (LOG_INFO,"Child %d terminated\n", pid);
     return;
 }
 
@@ -66,9 +64,6 @@ int setup_listener(int portno)
     if (bind(sockfd, (struct sockaddr *) &serv_addr, sizeof(serv_addr)) < 0)
         error("ERROR binding listener socket.");
 
-    /* Listen for clients. */
-    listen(sockfd, /*253 - player_count*/ 2);
-
     syslog (LOG_INFO,"Listener set.");
 
     /* Return the socket number. */
@@ -89,6 +84,9 @@ void get_clients(int lis_sockfd, int * cli_sockfd)
     int num_conn = 0;
     while(num_conn < 2)
     {
+        /* Listen for clients. */
+        listen(lis_sockfd, /*253 - player_count*/ 2);
+
         /* Zero out memory for the client information. */
         memset(&cli_addr, 0, sizeof(cli_addr));
 
@@ -402,21 +400,8 @@ int daemon_init(const char *pname, int facility, uid_t uid, int socket){
 
 int main(int argc, char *argv[])
 {   
-    void                sig_chld(int);
-    struct sigaction new_action, old_action;
-
-  /* Set up the structure to specify the new action. */
-    new_action.sa_handler = sig_chld;
-    //new_action.sa_handler = SIG_IGN;
-    sigemptyset (&new_action.sa_mask);
-    new_action.sa_flags = 0;
-
-    if( sigaction (SIGCHLD, &new_action, &old_action) < 0 ){
-          fprintf(stderr,"sigaction error : %s\n", strerror(errno));
-          return 1;
-    }
- 
-
+    
+    signal(SIGCHLD, sig_chld);
     /* Start program as deamon */
 
     daemon_init(argv[0], LOG_USER, 1000, MAXFD);
@@ -457,4 +442,5 @@ int main(int argc, char *argv[])
     }
 
     close(lis_sockfd);
+    syslog (LOG_INFO,"quitting...");
 }
